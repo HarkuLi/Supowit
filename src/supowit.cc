@@ -30,15 +30,14 @@ std::set<Chord>* Supowit::MaxIndependentSet(unsigned int start, unsigned int end
   // Case 2
   std::set<Chord>* chord_set_1 = MaxIndependentSet(start, end - 1);
   std::set<Chord>* chord_set_2 = MaxIndependentSet(start, end_match - 1);
-  std::set<Chord>* chord_set_3 = MaxIndependentSet(end_match + 1, end - 1);
-  
-  if (chord_set_1->size() >= chord_set_2->size() + chord_set_3->size() + 1) {
+  std::set<Chord>* chord_set_3 = MaxIndependentSet(end_match, end);
+
+  if (chord_set_1->size() >= chord_set_2->size() + chord_set_3->size()) {
     return chord_set_1;
   }
 
   for (const auto &chord : *chord_set_3) {
     chord_set_2->insert(Chord(chord.get_point_small(), chord.get_point_large()));
   }
-  chord_set_2->insert(Chord(end_match, end));
   return chord_set_2;
 }

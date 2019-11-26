@@ -1,3 +1,4 @@
+#include <set>
 #include <vector>
 
 #include "chord.h"
@@ -5,39 +6,65 @@
 
 Supowit::Supowit(const std::vector<unsigned int>& point_map) {
   this->point_map = point_map;
+
+  dp_table = new std::set<unsigned int>**[point_map.size()];
+  for (size_t i = 0; i < point_map.size(); ++i) {
+    dp_table[i] = new std::set<unsigned int>*[point_map.size()];
+  }
 }
 
-std::set<Chord>* Supowit::MaxIndependentSet(unsigned int start, unsigned int end) {
+Supowit::~Supowit() {
+  for (size_t i = 0; i < point_map.size(); ++i) {
+    for (size_t j = 0; j < point_map.size(); ++j) {
+      delete dp_table[i][j];
+    }
+    delete[] dp_table[i];
+  }
+  delete[] dp_table;
+}
+
+std::set<unsigned int> Supowit::MaxIndependentSet(unsigned int start, unsigned int end) {
+  if (dp_table[start][end] != NULL) {
+    return *dp_table[start][end];
+  }
+
   if (end == start) {
-    return new std::set<Chord>();
+    return std::set<unsigned int>();
   }
 
   unsigned int end_match = point_map[end];
+  std::set<unsigned int> rst;
 
   // Case 3
   if (end_match == start) {
-    std::set<Chord>* rst = end - start == 1
-      ? new std::set<Chord>() : MaxIndependentSet(start+1, end-1);
-    rst->insert(Chord(start, end));
+    if (end - start > 1) {
+      rst = MaxIndependentSet(start+1, end-1);
+    }
+    rst.insert(start);
+    dp_table[start][end] = new std::set<unsigned int>(rst);
     return rst;
   }
 
   // Case 1
   if (end_match > end || end_match < start) {
-    return MaxIndependentSet(start, end - 1);
+    rst = MaxIndependentSet(start, end - 1);
+    dp_table[start][end] = new std::set<unsigned int>(rst);
+    return rst;
   }
 
   // Case 2
-  std::set<Chord>* chord_set_1 = MaxIndependentSet(start, end - 1);
-  std::set<Chord>* chord_set_2 = MaxIndependentSet(start, end_match - 1);
-  std::set<Chord>* chord_set_3 = MaxIndependentSet(end_match, end);
+  std::set<unsigned int> point_set_1 = MaxIndependentSet(start, end - 1);
+  std::set<unsigned int> point_set_2 = MaxIndependentSet(start, end_match - 1);
+  std::set<unsigned int> point_set_3 = MaxIndependentSet(end_match, end);
 
-  if (chord_set_1->size() >= chord_set_2->size() + chord_set_3->size()) {
-    return chord_set_1;
+  if (point_set_1.size() >= point_set_2.size() + point_set_3.size()) {
+    dp_table[start][end] = new std::set<unsigned int>(point_set_1);
+    return point_set_1;
   }
 
-  for (const auto &chord : *chord_set_3) {
-    chord_set_2->insert(Chord(chord.get_point_small(), chord.get_point_large()));
+  for (const auto &point : point_set_3) {
+    point_set_2.insert(point);
   }
-  return chord_set_2;
+  dp_table[start][end] = new std::set<unsigned int>(point_set_2);
+  return point_set_2;
 }

@@ -9,10 +9,12 @@
 class Supowit {
   private:
     std::vector<unsigned int> point_map;
+    std::set<unsigned int>*** dp_table;
 
   public:
     Supowit(const std::vector<unsigned int>&);
-    std::set<Chord>* MaxIndependentSet(unsigned int, unsigned int);
+    ~Supowit();
+    std::set<unsigned int> MaxIndependentSet(unsigned int, unsigned int);
 };
 
 #endif

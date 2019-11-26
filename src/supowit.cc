@@ -23,7 +23,17 @@ Supowit::~Supowit() {
   delete[] dp_table;
 }
 
-std::set<unsigned int> Supowit::MaxIndependentSet(unsigned int start, unsigned int end) {
+std::set<Chord> Supowit::MaxIndependentSet() {
+  std::set<unsigned int> point_set = MaxIndependentSetPartial(0, point_map.size() - 1);
+  std::set<Chord> rst;
+
+  for (const auto& point : point_set) {
+    rst.insert(Chord(point, point_map[point]));
+  }
+  return rst;
+}
+
+std::set<unsigned int> Supowit::MaxIndependentSetPartial(unsigned int start, unsigned int end) {
   if (dp_table[start][end] != NULL) {
     return *dp_table[start][end];
   }
@@ -35,36 +45,47 @@ std::set<unsigned int> Supowit::MaxIndependentSet(unsigned int start, unsigned i
   unsigned int end_match = point_map[end];
   std::set<unsigned int> rst;
 
-  // Case 3
   if (end_match == start) {
-    if (end - start > 1) {
-      rst = MaxIndependentSet(start+1, end-1);
-    }
-    rst.insert(start);
-    dp_table[start][end] = new std::set<unsigned int>(rst);
-    return rst;
+    rst = Case3(start, end);
+  } else if (end_match > end || end_match < start) {
+    rst = Case1(start, end);
+  } else {
+    rst = Case2(start, end);
   }
 
-  // Case 1
-  if (end_match > end || end_match < start) {
-    rst = MaxIndependentSet(start, end - 1);
-    dp_table[start][end] = new std::set<unsigned int>(rst);
-    return rst;
-  }
+  dp_table[start][end] = new std::set<unsigned int>(rst);
+  return rst;
+}
 
-  // Case 2
-  std::set<unsigned int> point_set_1 = MaxIndependentSet(start, end - 1);
-  std::set<unsigned int> point_set_2 = MaxIndependentSet(start, end_match - 1);
-  std::set<unsigned int> point_set_3 = MaxIndependentSet(end_match, end);
+// MIS(i, j) = MIS(i, j-1)
+std::set<unsigned int> Supowit::Case1(unsigned int start, unsigned int end) {
+  return MaxIndependentSetPartial(start, end - 1);
+}
+
+// MIS(i, j) = max(MIS(i, j-1), MIS(i, k-1) + MIS(k, j))
+std::set<unsigned int> Supowit::Case2(unsigned int start, unsigned int end) {
+  unsigned int end_match = point_map[end];
+  std::set<unsigned int> point_set_1 = MaxIndependentSetPartial(start, end - 1);
+  std::set<unsigned int> point_set_2 = MaxIndependentSetPartial(start, end_match - 1);
+  std::set<unsigned int> point_set_3 = MaxIndependentSetPartial(end_match, end);
 
   if (point_set_1.size() >= point_set_2.size() + point_set_3.size()) {
-    dp_table[start][end] = new std::set<unsigned int>(point_set_1);
     return point_set_1;
   }
 
   for (const auto &point : point_set_3) {
     point_set_2.insert(point);
   }
-  dp_table[start][end] = new std::set<unsigned int>(point_set_2);
   return point_set_2;
+}
+
+// MIS(i, j) = MIS(i+1, j-1) + Chord(i, j)
+std::set<unsigned int> Supowit::Case3(unsigned int start, unsigned int end) {
+  std::set<unsigned int> rst;
+  if (end - start > 1) {
+    rst = MaxIndependentSetPartial(start+1, end-1);
+  }
+  rst.insert(start);
+
+  return rst;
 }

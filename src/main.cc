@@ -10,10 +10,10 @@ int main(int argc, char** argv) {
   std::vector<unsigned int> point_map = io.ReadFile(argv[1]);
 
   Supowit supowit(point_map);
-  std::set<unsigned int> rst = supowit.MaxIndependentSet(0, point_map.size() - 1);
+  std::set<Chord> rst = supowit.MaxIndependentSet();
 
-  for (const auto &point : rst) {
-    std::cout << point << std::endl;
+  for (const auto &chord : rst) {
+    std::cout << chord << std::endl;
   }
 
   return 0;

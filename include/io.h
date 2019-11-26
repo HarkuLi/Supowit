@@ -9,6 +9,7 @@
 class IO {
   public:
     std::vector<unsigned int> ReadFile(std::string);
+    void WriteFile(std::string, const std::set<Chord>&);
 };
 
 #endif

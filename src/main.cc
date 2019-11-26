@@ -1,7 +1,6 @@
 #include <iostream>
-#include <set>
 #include <vector>
-#include "chord.h"
+
 #include "io.h"
 #include "supowit.h"
 
@@ -10,11 +9,7 @@ int main(int argc, char** argv) {
   std::vector<unsigned int> point_map = io.ReadFile(argv[1]);
 
   Supowit supowit(point_map);
-  std::set<Chord> rst = supowit.MaxIndependentSet();
-
-  for (const auto &chord : rst) {
-    std::cout << chord << std::endl;
-  }
+  io.WriteFile(argv[2], supowit.MaxIndependentSet());
 
   return 0;
 }

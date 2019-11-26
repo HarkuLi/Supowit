@@ -1,7 +1,9 @@
 #include <fstream>
+#include <set>
 #include <string>
 #include <vector>
 
+#include "chord.h"
 #include "io.h"
 
 std::vector<unsigned int> IO::ReadFile(std::string filename) {
@@ -23,4 +25,15 @@ std::vector<unsigned int> IO::ReadFile(std::string filename) {
   fstream.close();
 
   return point_map;
+}
+
+void IO::WriteFile(std::string filename, const std::set<Chord>& chord_set) {
+  std::fstream fstream(filename, std::fstream::out | std::fstream::trunc);
+
+  fstream << chord_set.size() << std::endl;
+  for (const auto& chord : chord_set) {
+    fstream << chord.get_point_small() << ' ' << chord.get_point_large() << std::endl;
+  }
+
+  fstream.close();
 }

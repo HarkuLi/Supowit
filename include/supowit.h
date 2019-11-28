@@ -1,24 +1,32 @@
 #ifndef SUPOWIT_INCLUDE_SUPOWIT_H_
 #define SUPOWIT_INCLUDE_SUPOWIT_H_
 
+#include <limits>
+#include <memory>
 #include <set>
+#include <unordered_map>
+#include <utility>
 #include <vector>
-
-#include "chord.h"
 
 class Supowit {
   private:
-    std::vector<unsigned int> point_map;
-    std::set<unsigned int>*** dp_table;
-    std::set<unsigned int> MaxIndependentSetPartial(unsigned int, unsigned int);
-    std::set<unsigned int> Case1(unsigned int, unsigned int);
-    std::set<unsigned int> Case2(unsigned int, unsigned int);
-    std::set<unsigned int> Case3(unsigned int, unsigned int);
+    const unsigned short DP_TABLE_UNSET = std::numeric_limits<unsigned short>::max();
+    std::vector<unsigned short> point_map;
+    unsigned short** dp_table;
+    void BuildDpTable();
+    unsigned short MaxIndependentNum(unsigned short, unsigned short);
+    unsigned short NumCase1(unsigned short, unsigned short);
+    unsigned short NumCase2(unsigned short, unsigned short);
+    unsigned short NumCase3(unsigned short, unsigned short);
+    std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > Chords(unsigned short, unsigned short);
+    std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > ChordsCase1(unsigned short, unsigned short);
+    std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > ChordsCase2(unsigned short, unsigned short);
+    std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > ChordsCase3(unsigned short, unsigned short);
 
   public:
-    Supowit(const std::vector<unsigned int>&);
+    Supowit(const std::vector<unsigned short>&);
     ~Supowit();
-    std::set<Chord> MaxIndependentSet();
+    std::set< std::pair<unsigned short, unsigned short> > MaxIndependentChords();
 };
 
 #endif

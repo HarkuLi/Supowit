@@ -3,13 +3,13 @@
 
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
-#include "chord.h"
 
 class IO {
   public:
-    std::vector<unsigned int> ReadFile(std::string);
-    void WriteFile(std::string, const std::set<Chord>&);
+    std::vector<unsigned short> ReadFile(std::string);
+    void WriteFile(std::string, const std::set< std::pair<unsigned short, unsigned short> >&);
 };
 
 #endif

@@ -1,91 +1,159 @@
+#include <memory>
 #include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
-#include "chord.h"
 #include "supowit.h"
 
-Supowit::Supowit(const std::vector<unsigned int>& point_map) {
+Supowit::Supowit(const std::vector<unsigned short>& point_map) {
+  if (point_map.size() >= DP_TABLE_UNSET) {
+    throw std::length_error(
+      "The number of points can't be equal or larger than "
+      + std::to_string(DP_TABLE_UNSET)
+      + '.'
+    );
+  }
+
   this->point_map = point_map;
 
-  dp_table = new std::set<unsigned int>**[point_map.size()];
+  dp_table = new unsigned short*[point_map.size()];
   for (size_t i = 0; i < point_map.size(); ++i) {
-    dp_table[i] = new std::set<unsigned int>*[point_map.size()];
+    dp_table[i] = new unsigned short[point_map.size()];
+    memset(dp_table[i], DP_TABLE_UNSET, sizeof(*(dp_table[i])) * point_map.size());
   }
 }
 
 Supowit::~Supowit() {
-  for (size_t i = 0; i < point_map.size(); ++i) {
-    for (size_t j = 0; j < point_map.size(); ++j) {
-      delete dp_table[i][j];
-    }
+  for (int i = 0; i < point_map.size(); ++i) {
     delete[] dp_table[i];
   }
   delete[] dp_table;
 }
 
-std::set<Chord> Supowit::MaxIndependentSet() {
-  std::set<unsigned int> point_set = MaxIndependentSetPartial(0, point_map.size() - 1);
-  std::set<Chord> rst;
-
-  for (const auto& point : point_set) {
-    rst.insert(Chord(point, point_map[point]));
-  }
-  return rst;
+std::set< std::pair<unsigned short, unsigned short> > Supowit::MaxIndependentChords() {
+  BuildDpTable();
+  return *Chords(0, point_map.size() - 1);
 }
 
-std::set<unsigned int> Supowit::MaxIndependentSetPartial(unsigned int start, unsigned int end) {
-  if (dp_table[start][end] != NULL) {
-    return *dp_table[start][end];
+void Supowit::BuildDpTable() {
+  MaxIndependentNum(0, point_map.size() - 1);
+}
+
+unsigned short Supowit::MaxIndependentNum(unsigned short start, unsigned short end) {
+  if (dp_table[start][end] != DP_TABLE_UNSET) {
+    return dp_table[start][end];
   }
 
   if (end == start) {
-    return std::set<unsigned int>();
+    return dp_table[start][end] = 0;
   }
 
-  unsigned int end_match = point_map[end];
-  std::set<unsigned int> rst;
+  unsigned short end_match = point_map[end];
+  unsigned short rst;
 
   if (end_match == start) {
-    rst = Case3(start, end);
+    rst = NumCase3(start, end);
   } else if (end_match > end || end_match < start) {
-    rst = Case1(start, end);
+    rst = NumCase1(start, end);
   } else {
-    rst = Case2(start, end);
+    rst = NumCase2(start, end);
   }
 
-  dp_table[start][end] = new std::set<unsigned int>(rst);
-  return rst;
+  return dp_table[start][end] = rst;
 }
 
 // MIS(i, j) = MIS(i, j-1)
-std::set<unsigned int> Supowit::Case1(unsigned int start, unsigned int end) {
-  return MaxIndependentSetPartial(start, end - 1);
+unsigned short Supowit::NumCase1(unsigned short start, unsigned short end) {
+  return MaxIndependentNum(start, end - 1);
 }
 
 // MIS(i, j) = max(MIS(i, j-1), MIS(i, k-1) + MIS(k, j))
-std::set<unsigned int> Supowit::Case2(unsigned int start, unsigned int end) {
-  unsigned int end_match = point_map[end];
-  std::set<unsigned int> point_set_1 = MaxIndependentSetPartial(start, end - 1);
-  std::set<unsigned int> point_set_2 = MaxIndependentSetPartial(start, end_match - 1);
-  std::set<unsigned int> point_set_3 = MaxIndependentSetPartial(end_match, end);
+unsigned short Supowit::NumCase2(unsigned short start, unsigned short end) {
+  unsigned short end_match = point_map[end];
+  unsigned short mis1 = MaxIndependentNum(start, end - 1);
+  unsigned short mis2 = MaxIndependentNum(start, end_match - 1);
+  unsigned short mis3 = MaxIndependentNum(end_match, end);
 
-  if (point_set_1.size() >= point_set_2.size() + point_set_3.size()) {
-    return point_set_1;
+  if (mis1 >= mis2 + mis3) {
+    return mis1;
   }
 
-  for (const auto &point : point_set_3) {
-    point_set_2.insert(point);
-  }
-  return point_set_2;
+  return mis2 + mis3;
 }
 
 // MIS(i, j) = MIS(i+1, j-1) + Chord(i, j)
-std::set<unsigned int> Supowit::Case3(unsigned int start, unsigned int end) {
-  std::set<unsigned int> rst;
+unsigned short Supowit::NumCase3(unsigned short start, unsigned short end) {
+  unsigned short rst = 1;
   if (end - start > 1) {
-    rst = MaxIndependentSetPartial(start+1, end-1);
+    rst += MaxIndependentNum(start+1, end-1);
   }
-  rst.insert(start);
-
   return rst;
+}
+
+// must call BuildDpTable() before it
+std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > Supowit::Chords(
+  unsigned short start,
+  unsigned short end
+) {
+  if (end == start || dp_table[start][end] == 0) {
+    return std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > >(new std::set< std::pair<unsigned short, unsigned short> >());
+  }
+
+  unsigned short end_match = point_map[end];
+
+  if (end_match == start) {
+    return ChordsCase3(start, end);
+  }
+  
+  if (end_match > end || end_match < start) {
+    return ChordsCase1(start, end);
+  }
+
+  return ChordsCase2(start, end);
+}
+
+std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > Supowit::ChordsCase1(
+  unsigned short start,
+  unsigned short end
+) {
+  return Chords(start, end - 1);
+}
+
+std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > Supowit::ChordsCase2(
+  unsigned short start,
+  unsigned short end
+) {
+  unsigned short end_match = point_map[end];
+  unsigned short num1 = dp_table[start][end - 1];
+  unsigned short num2 = dp_table[start][end_match - 1];
+  unsigned short num3 = dp_table[end_match][end];
+
+  if (num1 >= num2 + num3) {
+    return Chords(start, end - 1);
+  }
+
+  auto chords2 = Chords(start, end_match - 1);
+  auto chords3 = Chords(end_match, end);
+  for (const auto& chord : *chords3) {
+    chords2->insert(chord);
+  }
+  return std::move(chords2);
+}
+
+std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > Supowit::ChordsCase3(
+  unsigned short start,
+  unsigned short end
+) {
+  std::unique_ptr< std::set< std::pair<unsigned short, unsigned short> > > rst;
+
+  if (end - start > 1) {
+    rst = Chords(start+1, end-1);
+  } else {
+    rst.reset(new std::set< std::pair<unsigned short, unsigned short> >());
+  }
+  rst->insert(std::make_pair(start, end));
+
+  return std::move(rst);
 }
